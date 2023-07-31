@@ -41,15 +41,25 @@ export async function createCustomer(req, res) {
         `, [name, cpf, birthday, phone])
 
         res.sendStatus(201)
-
     } catch (err) {
         res.status(500).send(err.message)
     }
 }
 
 export async function updateCustomer(req, res) {
-    try {
+    const { id } = req.params
+    const { name, cpf, birthday, phone } = req.body
 
+    try {
+        const response = await db.query(`SELECT * FROM customers WHERE cpf=$1 AND id <> $2;`, [cpf, id])
+        if (response.rowCount > 0) return res.status(409).send({ message: "Esse CPF já pertence a outro cliente!" })
+
+        await db.query(`
+            UPDATE customers 
+                SET name=$1, cpf=$2, birthday=$3, phone=$4 WHERE id=$5`,
+            [name, cpf, birthday, phone, id])
+
+        res.send(200)
     } catch (err) {
         res.status(500).send(err.message)
     }
