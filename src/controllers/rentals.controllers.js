@@ -60,7 +60,28 @@ export async function createRental(req, res) {
 }
 
 export async function finishRental(req, res) {
+    const { id } = req.params
+    let delayFee = null
+
+
     try {
+        const response = await db.query(`SELECT * FROM rentals WHERE id=$1;`, [id])
+        if (response.rowCount === 0) return res.sendStatus(404)
+
+        const rental = response.rows[0]
+        if (rental.returnDate !== null) return res.sendStatus(400)
+
+        const rentDate = dayjs(rental.rentDate)
+        const difference = dayjs().diff(rentDate, "days")
+
+        if (difference > rental.daysRented) {
+            delayFee = (rental.originalPrice / rental.daysRented) * (difference - rental.daysRented)
+        }
+
+        await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3;`,
+            [dayjs().format("YYYY-MM-DD"), delayFee, id])
+
+        res.sendStatus(200)
 
     } catch (err) {
         res.status(500).send(err.message)
@@ -68,8 +89,15 @@ export async function finishRental(req, res) {
 }
 
 export async function deleteRental(req, res) {
-    try {
+    const { id } = req.params
 
+    try {
+        const rental = await db.query(`SELECT * FROM rentals WHERE id=$1`, [id])
+        if (rental.rowCount === 0) return res.status(404).send({ message: "Aluguel inexistente!" })
+        if (rental.rows[0].returnDate === null) return res.status(400).send({ message: "Aluguel não pode ser deletado pois não foi finalizado." })
+        
+        await db.query(`DELETE FROM rentals WHERE id=$1`, [id])
+        res.sendStatus(200)
     } catch (err) {
         res.status(500).send(err.message)
     }
