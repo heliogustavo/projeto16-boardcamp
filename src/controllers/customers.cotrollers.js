@@ -17,12 +17,10 @@ export async function getCustomers(req, res) {
 }
 
 export async function getCustomerById(req, res) {
-    const { id } = req.params
-    try {
-        const response = await db.query(`SELECT * FROM customers WHERE id=$1;`, [id])
-        if (response.rowCount === 0) return res.status(404).send({ message: "Usuario não encontrado!" })
+    const { customerData } = res.locals
 
-        const customer = { ...response.rows[0], birthday: dayjs(response.rows[0].birthday).format("YYYY-MM-DD") }
+    try {
+        const customer = { ...customerData, birthday: dayjs(customerData.birthday).format("YYYY-MM-DD") }
         res.send(customer)
     } catch (err) {
         res.status(500).send(err.message)
