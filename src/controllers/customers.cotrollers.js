@@ -51,7 +51,7 @@ export async function updateCustomer(req, res) {
     const { name, cpf, birthday, phone } = req.body
 
     try {
-        const response = await db.query(`SELECT * FROM customers WHERE cpf=$1 AND id <> $2;`, [cpf, id])
+        const response = await db.query(`SELECT * FROM customers WHERE cpf=$1 AND id != $2;`, [cpf, id])
         if (response.rowCount > 0) return res.status(409).send({ message: "Esse CPF já pertence a outro cliente!" })
 
         await db.query(`
